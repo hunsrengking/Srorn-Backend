@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export PYTHONPATH=/home/your_username/public_html:$PYTHONPATH
+    - /usr/bin/python3 -m pip install --user -r requirements.txt

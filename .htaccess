@@ -1,0 +1,10 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ - [L]
+</IfModule>
+
+<IfModule mod_ssl.c>
+    SetEnvIf Request_URI . HTTPS=on
+</IfModule>
