@@ -11,3 +11,8 @@ sendgrid
 fastapi
 asgiref
 pymysql
+python-multipart
+pandas
+openpyxl
+reportlab
+xlsxwriter
