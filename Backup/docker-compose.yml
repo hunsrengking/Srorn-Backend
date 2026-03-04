@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: srorn
+      MYSQL_USER: srorn
+      MYSQL_PASSWORD: srornpass
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  backend:
+    build:
+      context: ./Srorn-Backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DB_USER: srorn
+      DB_PASSWORD: srornpass
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: srorn
+    ports:
+      - "0.0.0.0:8000:8000"
+    volumes:
+      - ./Srorn-Backend/app/uploads:/app/app/uploads
+
+  frontend:
+    build:
+      context: ./Srorn-Frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "0.0.0.0:3000:80"
+
+volumes:
+  db_data:
