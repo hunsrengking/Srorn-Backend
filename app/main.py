@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import (
+    student_route,
     user_routes,
     auth_routes,
     role_route,
@@ -51,6 +52,7 @@ app.include_router(dashboard_route.router)
 app.include_router(positions_route.router)
 app.include_router(staff_route.router)
 app.include_router(report_route.router)
+app.include_router(student_route.router)
 
 app.mount(
     "/uploads",
