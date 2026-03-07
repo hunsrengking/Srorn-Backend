@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.config.db import get_db
 from app.services import positions_service
 from app.models.positions_model import PositionResponse, PositionCreate, PositionUpdate
+from app.middlewares.auth_middlewares import require_permission
 
 router = APIRouter(tags=["positions"])
 
@@ -33,5 +34,6 @@ def update_position(
 def delete_position(
     position_id: int,
     db: Session = Depends(get_db),
+    user=Depends(require_permission("delete_position")),
 ):
     return positions_service.delete_position(position_id, db)

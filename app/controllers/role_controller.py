@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.config.db import get_db
 from app.services import role_service
-from app.middlewares.auth_middlewares import requirepermissions
+from app.middlewares.auth_middlewares import requirepermissions, require_permission
 
 router = APIRouter()
 
@@ -53,8 +53,7 @@ def createRole(date: RoleCreateReq, db: Session = Depends(get_db)):
 
 
 @router.delete("/role/{role_id}")
-# @requirepermissions("create_roles")
-def DisableRole(role_id: int, db: Session = Depends(get_db)):
+def DisableRole(role_id: int, db: Session = Depends(get_db), user=Depends(require_permission("delete_role"))):
     role = role_service.disableRole(db, role_id)
 
 

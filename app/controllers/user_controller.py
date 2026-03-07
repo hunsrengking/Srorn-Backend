@@ -3,20 +3,20 @@ from sqlalchemy.orm import Session
 from app.services import user_service
 from app.config.db import get_db
 from app.models.user_model import *
-from app.middlewares.auth_middlewares import requirepermissions
+from app.middlewares.auth_middlewares import require_permission
 
 router = APIRouter()
 
 
 @router.get("/users")
 # @requirepermissions("view_users")
-def list_users(db: Session = Depends(get_db)):
+def list_users(db: Session = Depends(get_db), user=Depends(require_permission("VIEW_USER"))):
     return user_service.getAllUser(db)
 
 
 @router.get("/users/{id}")
 # @requirepermissions("view_users")
-def getUserById(id: int, db: Session = Depends(get_db)):
+def getUserById(id: int, db: Session = Depends(get_db), user=Depends(require_permission("VIEW_USER"))):
     user = user_service.getUserById(db, id)
     if not user:
         raise HTTPException(status_code=404, detail=f"User with id={id} not found")
@@ -25,7 +25,7 @@ def getUserById(id: int, db: Session = Depends(get_db)):
 
 @router.post("/users")
 # @requirepermissions("create_users")
-def createUser(data: UserModel, db: Session = Depends(get_db)):
+def createUser(data: UserModel, db: Session = Depends(get_db), user=Depends(require_permission("CREATE_USER"))):
     return (
         user_service.create_user(
             db,
@@ -45,6 +45,7 @@ def updateUser(
     user_id: int,
     data: UserModel,
     db: Session = Depends(get_db),
+    user=Depends(require_permission("UPDATE_USER")),
 ):
     updated_user = user_service.update_user(
         db,
@@ -62,8 +63,7 @@ def updateUser(
 
 
 @router.delete("/users/{user_id}")
-# @requirepermissions("delete_users")
-def deleteUser(user_id: int, db: Session = Depends(get_db)):
+def deleteUser(user_id: int, db: Session = Depends(get_db), user=Depends(require_permission("DELETE_USER"))):
     deleted_user = user_service.delete_user(db, user_id)
     if not deleted_user:
         raise HTTPException(status_code=404, detail=f"User with id={user_id} not found")
@@ -71,11 +71,10 @@ def deleteUser(user_id: int, db: Session = Depends(get_db)):
 
 
 @router.patch("/users/{user_id}/change-password")
-# @requirepermissions("change_user_password")
 def adminChangeUserPassword(
     user_id: int,
     data: dict,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db), user=Depends(require_permission("CHANGE_USER_PASSWORD")),
 ):
     password = data.get("password")
     return user_service.admin_change_password(db, user_id, password)  # type: ignore
@@ -85,7 +84,7 @@ def adminChangeUserPassword(
 def changeUserPassword(
     user_id: int,
     data: ChangePasswordModel,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db), user=Depends(require_permission("CHANGE_OWN_PASSWORD")),
 ):
     return user_service.change_password(
         db,

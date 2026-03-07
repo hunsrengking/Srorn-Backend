@@ -10,6 +10,7 @@ from app.models.staff_model import (
     StaffResponse,
 )
 from app.services import staff_service
+from app.middlewares.auth_middlewares import require_permission
 
 router = APIRouter(tags=["Staff"])
 
@@ -94,5 +95,5 @@ def update_staff(
 
 
 @router.delete("/staff/{staff_id}")
-def delete_staff(staff_id: int, db: Session = Depends(get_db)):
+def delete_staff(staff_id: int, db: Session = Depends(get_db), user=Depends(require_permission("delete_staff"))):
     return staff_service.delete_staff(staff_id, db)
