@@ -8,6 +8,7 @@ from app.models.telegram_model import (
     TelegramConfigUpdate,
 )
 from app.services import telegram_service
+from app.middlewares.auth_middlewares import require_permission
 
 router = APIRouter(tags=["Telegram"])
 
@@ -38,5 +39,6 @@ def update_config(
 def delete_config(
     config_id: int,
     db: Session = Depends(get_db),
+    user=Depends(require_permission("delete_telegram")),
 ):
     return telegram_service.delete_config(config_id, db)

@@ -113,3 +113,25 @@ def requirepermissions(permission_name: str):
         return async_wrapper if inspect.iscoroutinefunction(func) else sync_wrapper
 
     return decorator
+
+
+def require_permission(permission_name: str):
+    """
+    Dependency function to check if the current user has the required permission.
+    Usage: def delete_user(id: int, user=Depends(require_permission("delete_user"))):
+    """
+    async def check_permission(current_user=Depends(get_current_user)):
+        role = getattr(current_user, "role", None)
+        if not role:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="No role assigned"
+            )
+        user_permissions = [p.name for p in getattr(role, "permissions", [])]
+        if permission_name not in user_permissions:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail=f"Permission denied: {permission_name} is required"
+            )
+        return current_user
+
+    return check_permission

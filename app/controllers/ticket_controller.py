@@ -19,7 +19,7 @@ from app.models.ticket_model import (
     ApproveReq,
     TicketUpdateReq,
 )
-from app.middlewares.auth_middlewares import get_current_user
+from app.middlewares.auth_middlewares import get_current_user, require_permission
 from app.schema.user_schema import User
 import os, uuid
 from fastapi.responses import FileResponse
@@ -105,7 +105,7 @@ def RejectTicket(
 def DeleteTicket(
     id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("delete_ticket")),
 ):
     return ticket_service.DeleteTicket(id=id, db=db, user_id=current_user.id)  # type: ignore
 

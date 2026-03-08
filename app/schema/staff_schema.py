@@ -21,3 +21,4 @@ class Staff(Base):
     # relationship
     position = relationship("Position", back_populates="staff")
     users = relationship("User", back_populates="staff")
+    print_cards = relationship("PrintCard", back_populates="seller")

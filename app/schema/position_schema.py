@@ -17,3 +17,4 @@ class Position(Base):
 
     # relationship
     staff = relationship("Staff", back_populates="position")
+    students = relationship("Student", back_populates="position")

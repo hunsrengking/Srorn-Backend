@@ -1,0 +1,8 @@
+POSITIONS_STUDENT = 1
+POSITIONS_TEACHER = 2
+
+# Optional mapping helper
+POSITIONS_NAME_MAP = {
+    POSITIONS_STUDENT: "Student",
+    POSITIONS_TEACHER: "Teacher",
+}
