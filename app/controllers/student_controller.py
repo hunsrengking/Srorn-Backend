@@ -18,3 +18,7 @@ class StudentController:
     @staticmethod
     def update(student_id, student_data, db):
         return StudentService.update_student(student_id, student_data, db)
+    
+    @staticmethod
+    def delete(student_id, db):
+        return StudentService.delete_student(student_id, db)

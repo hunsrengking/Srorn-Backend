@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import (
+    organization_route,
     student_route,
     user_routes,
     auth_routes,
@@ -53,6 +54,7 @@ app.include_router(positions_route.router)
 app.include_router(staff_route.router)
 app.include_router(report_route.router)
 app.include_router(student_route.router)
+app.include_router(organization_route.router)
 
 app.mount(
     "/uploads",
@@ -76,6 +78,8 @@ def on_startup():
     import app.schema.notification_schema
     import app.schema.position_schema
     import app.schema.staff_schema
+    import app.schema.student_schema
+    import app.schema.print_card_schema
 
     print("Registered tables before create_all():", list(Base.metadata.tables.keys()))
 

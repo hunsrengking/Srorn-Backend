@@ -4,20 +4,18 @@ from app.services import department_service
 from app.config.db import get_db
 from app.models.user_model import *
 from app.models.department_model import DepartmentModel
-from app.middlewares.auth_middlewares import requirepermissions, require_permission
+from app.middlewares.auth_middlewares import require_permission
 
 router = APIRouter()
 
 
 @router.get("/department")
-# @requirepermissions("view_department")
-def list_department(db: Session = Depends(get_db)):
+def list_department(db: Session = Depends(get_db), user=Depends(require_permission("VIEW_DEPARTMENT"))):
     return department_service.getAllDepartment(db)
 
 
 @router.get("/department/{id}")
-# @requirepermissions("view_department")
-def getDepartmentById(id: int, db: Session = Depends(get_db)):
+def getDepartmentById(id: int, db: Session = Depends(get_db), user=Depends(require_permission("VIEW_DEPARTMENT"))):
     department = department_service.getDepartmentById(db, id)
     if not department:
         raise HTTPException(
@@ -27,8 +25,7 @@ def getDepartmentById(id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/department")
-# @requirepermissions("create_department")
-def createDepartment(data: DepartmentModel, db: Session = Depends(get_db)):
+def createDepartment(data: DepartmentModel, db: Session = Depends(get_db), user=Depends(require_permission("CREATE_DEPARTMENT"))):
     return (
         department_service.createDepartment(
             db,
@@ -40,7 +37,7 @@ def createDepartment(data: DepartmentModel, db: Session = Depends(get_db)):
 
 
 @router.delete("/department/{id}")
-def DisableDepartment(id: int, db: Session = Depends(get_db), user=Depends(require_permission("delete_department"))):
+def DisableDepartment(id: int, db: Session = Depends(get_db), user=Depends(require_permission("DELETE_DEPARTMENT"))):
     DisableDepartment = department_service.DisableDepartment(db, id)
     if not DisableDepartment:
         raise HTTPException(

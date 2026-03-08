@@ -4,7 +4,7 @@ from app.config.db import get_db
 from app.controllers.student_controller import StudentController
 from app.models.student_model import StudentCreate, StudentResponse, StudentUpdate
 
-router = APIRouter(prefix="/students", tags=["Students"])
+router = APIRouter(prefix="/api/students", tags=["Students"])
 
 
 @router.post("/", response_model=StudentResponse)
@@ -27,3 +27,7 @@ def update_student(
     student_id: int, student: StudentUpdate, db: Session = Depends(get_db)
 ):
     return StudentController.update(student_id, student, db)
+
+@router.delete("/{student_id}")
+def delete_student(student_id: int, db: Session = Depends(get_db)):
+    return StudentController.delete(student_id, db)
