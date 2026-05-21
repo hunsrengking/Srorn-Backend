@@ -4,7 +4,9 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.config.db import get_db
-from app.services import auth_service, user_service, role_service
+from app.features.auth import service as auth_service
+from app.features.users import service as user_service
+from app.features.roles import service as role_service
 import logging
 
 auth_scheme = HTTPBearer(auto_error=False)
