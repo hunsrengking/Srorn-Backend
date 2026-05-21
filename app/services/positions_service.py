@@ -2,8 +2,9 @@ from app.schema.position_schema import Position
 from app.schema.user_schema import User
 from typing import Optional, List
 from sqlalchemy.exc import IntegrityError
-from fastapi import HTTPException
 from sqlalchemy.orm import joinedload, Session
+from fastapi import HTTPException, BackgroundTasks
+from app.services.notification_service import notify_action
 from app.models.positions_model import PositionCreate, PositionUpdate
 from decimal import Decimal
 
@@ -27,7 +28,7 @@ def _validate_salary(min_salary: Decimal | None, max_salary: Decimal | None):
         )
 
 
-def create_position(data: PositionCreate, db: Session):
+def create_position(data: PositionCreate, db: Session, current_user=None, background_tasks: BackgroundTasks | None = None):
     try:
         _validate_salary(data.min_salary, data.max_salary)
 
@@ -35,6 +36,24 @@ def create_position(data: PositionCreate, db: Session):
         db.add(position)
         db.commit()
         db.refresh(position)
+
+        if current_user and background_tasks:
+            telegram_msg = (
+                f"<b>📍 New Position Created:</b> {position.title}\n"
+                f"<b>👤 Created by:</b> {current_user.username}\n"
+                "==============================\n"
+            )
+            notify_action(
+                db=db,
+                user=current_user,
+                title="New Position Created",
+                message=f"Position {position.title} has been added",
+                link=f"/positions",
+                notification_type="position",
+                background_tasks=background_tasks,
+                telegram_message=telegram_msg,
+            )
+
         return position
 
     except IntegrityError:

@@ -2,8 +2,9 @@ from app.schema.departments_schema import Department
 from app.schema.user_schema import User
 from typing import Optional, List
 from sqlalchemy.exc import IntegrityError
-from fastapi import HTTPException
 from sqlalchemy.orm import joinedload
+from fastapi import HTTPException, BackgroundTasks
+from app.services.notification_service import notify_action
 
 
 @staticmethod
@@ -51,7 +52,7 @@ def getDepartmentById(db, department_id: int):
 
 
 @staticmethod
-def createDepartment(db, name: str, status_id: int, description: str):
+def createDepartment(db, name: str, status_id: int, description: str, current_user=None, background_tasks: BackgroundTasks | None = None):
     new_department = Department(
         name=name,
         status_id=status_id,
@@ -61,6 +62,25 @@ def createDepartment(db, name: str, status_id: int, description: str):
         db.add(new_department)
         db.commit()
         db.refresh(new_department)
+
+        if current_user and background_tasks:
+            telegram_msg = (
+                f"<b>🏢 New Department Created:</b> {new_department.name}\n"
+                f"<b>📝 Description:</b> {new_department.description or 'No description'}\n"
+                f"<b>👤 Created by:</b> {current_user.username}\n"
+                "==============================\n"
+            )
+            notify_action(
+                db=db,
+                user=current_user,
+                title="New Department Created",
+                message=f"Department {new_department.name} has been added",
+                link=f"/departments",
+                notification_type="department",
+                background_tasks=background_tasks,
+                telegram_message=telegram_msg,
+            )
+
         return new_department
     except IntegrityError:
         db.rollback()

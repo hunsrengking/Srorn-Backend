@@ -1,11 +1,10 @@
 from app.services.student_service import StudentService
 
-
 class StudentController:
 
     @staticmethod
-    def create(student_data, db):
-        return StudentService.create_student(student_data, db)
+    def create(student_data, db, current_user, background_tasks):
+        return StudentService.create_student(student_data, db, current_user, background_tasks)
 
     @staticmethod
     def get_all(db):

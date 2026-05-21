@@ -1,6 +1,10 @@
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field
+from app.models.staff_model import StaffResponse
+from app.models.student_model import StudentResponse
+from app.models.positions_model import PositionResponse
+
 
 
 class PrintCardMapping(BaseModel):
@@ -20,6 +24,19 @@ class PrintCardCreate(BaseModel):
     description: str | None
     mappings: List[PrintCardMapping] = []
 
+class PrintCardUpdate(BaseModel):
+    entry_id: Optional[int] = None
+    print_date: Optional[datetime] = None
+    is_print_card: Optional[bool] = None
+    seller_id: Optional[int] = None
+    description: Optional[str] = None
+    mappings: Optional[List[PrintCardMapping]] = None
+
+class PrintCardTemplate(BaseModel):
+    staffs: List[StaffResponse]
+    students: List[StudentResponse]
+    positions: List[PositionResponse]
+
 
 class PrintCardResponse(BaseModel):
     id: int
@@ -31,9 +48,7 @@ class PrintCardResponse(BaseModel):
     seller_id: int
     seller_name: Optional[str] = None
     description: Optional[str] = None
+    mappings: List[PrintCardMapping] = []
 
     class Config:
-        from_attributes = True
-
-    class Config:
-        from_attributes = True
+        from_attributes = True

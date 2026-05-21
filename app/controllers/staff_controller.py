@@ -1,5 +1,5 @@
 # app/controllers/staff_controller.py
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -10,7 +10,7 @@ from app.models.staff_model import (
     StaffResponse,
 )
 from app.services import staff_service
-from app.middlewares.auth_middlewares import require_permission
+from app.middlewares.auth_middlewares import require_permission, get_current_user
 
 router = APIRouter(tags=["Staff"])
 
@@ -55,8 +55,13 @@ def get_staff(staff_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/staff", response_model=StaffResponse)
-def create_staff(data: StaffCreate, db: Session = Depends(get_db)):
-    staff = staff_service.create_staff(data, db)
+def create_staff(
+    data: StaffCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+):
+    staff = staff_service.create_staff(data, db, current_user, background_tasks)
 
     return {
         "id": staff.id,

@@ -1,6 +1,7 @@
 # app/services/staff_service.py
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, BackgroundTasks
+from app.services.notification_service import notify_action
 
 from app.schema.staff_schema import Staff
 from app.schema.position_schema import Position
@@ -39,7 +40,7 @@ def get_staff_by_id(staff_id: int, db: Session) -> Staff:
     return staff
 
 
-def create_staff(data: StaffCreate, db: Session):
+def create_staff(data: StaffCreate, db: Session, current_user=None, background_tasks: BackgroundTasks | None = None):
     display_name = data.display_name or f"{data.firstname or ''} {data.lastname or ''}".strip()
 
     staff = Staff(
@@ -56,6 +57,26 @@ def create_staff(data: StaffCreate, db: Session):
     db.add(staff)
     db.commit()
     db.refresh(staff)
+
+    if current_user and background_tasks:
+        telegram_msg = (
+            f"<b>👤 New Staff Created:</b> {staff.display_name}\n"
+            f"<b>🆔 External ID:</b> {staff.external_id}\n"
+            f"<b>📱 Mobile:</b> {staff.mobile_no}\n"
+            f"<b>👤 Created by:</b> {current_user.username}\n"
+            "==============================\n"
+        )
+        notify_action(
+            db=db,
+            user=current_user,
+            title="New Staff Created",
+            message=f"Staff {staff.display_name} has been added",
+            link=f"/staff/views/{staff.id}",
+            notification_type="staff",
+            background_tasks=background_tasks,
+            telegram_message=telegram_msg,
+        )
+
     return staff
 
 

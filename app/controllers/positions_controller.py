@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.config.db import get_db
 from app.services import positions_service
 from app.models.positions_model import PositionResponse, PositionCreate, PositionUpdate
-from app.middlewares.auth_middlewares import require_permission
+from app.middlewares.auth_middlewares import require_permission, get_current_user
 
 router = APIRouter(tags=["positions"])
 
@@ -17,8 +17,10 @@ def getAllPositions(db: Session = Depends(get_db)):
 def create_position(
     data: PositionCreate,
     db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
 ):
-    return positions_service.create_position(data, db)
+    return positions_service.create_position(data, db, current_user, background_tasks)
 
 
 @router.put("/positions/{position_id}", response_model=PositionResponse)

@@ -1,6 +1,9 @@
 from sqlalchemy.orm import Session
 from app.schema.notification_schema import Notification
 from app.models.notification_model import NotificationCreate
+from fastapi import BackgroundTasks
+from app.services import telegram_service
+from app.config.iconfig import FRONTEND_URL
 
 
 def createNotification(db: Session, data: NotificationCreate):
@@ -44,3 +47,40 @@ def markAsRead(db: Session, notification_id: int, user_id: int):
         db.commit()
 
     return notification
+
+
+def notify_action(
+    db: Session,
+    user,
+    title: str,
+    message: str,
+    link: str,
+    notification_type: str,
+    background_tasks: BackgroundTasks | None = None,
+    telegram_message: str | None = None,
+):
+    """
+    Standard function to create an internal notification and optionally send a Telegram message.
+    """
+    # 1. Internal Notification
+    createNotification(
+        db,
+        NotificationCreate(
+            user_id=user.id,
+            title=title,
+            message=message,
+            link=link,
+            type=notification_type,
+        ),
+    )
+
+    # 2. Telegram Notification
+    if telegram_message and background_tasks:
+        config = telegram_service.getActiveTelegramConfig(db)
+        if config:
+            background_tasks.add_task(
+                telegram_service.SendTelegramMessageAsync,
+                config.bot_token,
+                config.chat_id,
+                telegram_message,
+            )

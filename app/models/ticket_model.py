@@ -73,7 +73,7 @@ class TicketResp(BaseModel):
     items: Optional[List[ItemResp]] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ApproveReq(BaseModel):
         approver_id: Optional[int] = None

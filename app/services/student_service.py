@@ -1,13 +1,14 @@
 from sqlalchemy.exc import SQLAlchemyError
-from fastapi import HTTPException
+from fastapi import HTTPException, BackgroundTasks
 from app.schema.position_schema import Position
 from app.schema.student_schema import Student
+from app.services.notification_service import notify_action
 
 
 class StudentService:
 
     @staticmethod
-    def create_student(student_data, db):
+    def create_student(student_data, db, current_user=None, background_tasks: BackgroundTasks | None = None):
         try:
             data = student_data.dict()
 
@@ -21,6 +22,23 @@ class StudentService:
             db.add(new_student)
             db.commit()
             db.refresh(new_student)
+
+            if current_user and background_tasks:
+                telegram_msg = (
+                    f"<b>🎓 New Student Created:</b> {new_student.display_name}\n"
+                    f"<b>👤 Created by:</b> {current_user.username}\n"
+                    "==============================\n"
+                )
+                notify_action(
+                    db=db,
+                    user=current_user,
+                    title="New Student Created",
+                    message=f"Student {new_student.display_name} has been added",
+                    link=f"/students/views/{new_student.id}",
+                    notification_type="student",
+                    background_tasks=background_tasks,
+                    telegram_message=telegram_msg,
+                )
 
             return new_student
 

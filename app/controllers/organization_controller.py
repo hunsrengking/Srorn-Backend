@@ -3,6 +3,10 @@ from app.services.organization_service import OrganizationService
 class OrganizationController:
 
     @staticmethod
+    def getAllPrintCardTemplate(db):
+        return OrganizationService.getAllPrintCardTemplate(db)
+
+    @staticmethod
     def getAllPrintCard(db):
         return OrganizationService.getAllPrintCard(db)
 
@@ -11,5 +15,9 @@ class OrganizationController:
         return OrganizationService.getAllPrintCardById(print_card_id, db)
 
     @staticmethod
-    def PrintCardNew(print_card_data, db):
-        return OrganizationService.PrintCardNew(print_card_data, db)
+    def PrintCardNew(print_card_data, db, current_user, background_tasks):
+        return OrganizationService.PrintCardNew(print_card_data, db, current_user, background_tasks)
+
+    @staticmethod
+    def UpdatePrintCard(print_card_id, print_card_data, db, current_user, background_tasks):
+        return OrganizationService.UpdatePrintCard(print_card_id, print_card_data, db, current_user, background_tasks)

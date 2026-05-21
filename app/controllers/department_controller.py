@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.services import department_service
 from app.config.db import get_db
 from app.models.user_model import *
 from app.models.department_model import DepartmentModel
-from app.middlewares.auth_middlewares import require_permission
+from app.middlewares.auth_middlewares import require_permission, get_current_user
 
 router = APIRouter()
 
@@ -25,15 +25,20 @@ def getDepartmentById(id: int, db: Session = Depends(get_db), user=Depends(requi
 
 
 @router.post("/department")
-def createDepartment(data: DepartmentModel, db: Session = Depends(get_db), user=Depends(require_permission("CREATE_DEPARTMENT"))):
-    return (
-        department_service.createDepartment(
+def createDepartment(
+    data: DepartmentModel, 
+    db: Session = Depends(get_db), 
+    user=Depends(require_permission("CREATE_DEPARTMENT")),
+    background_tasks: BackgroundTasks = BackgroundTasks()
+):
+    return department_service.createDepartment(
             db,
             data.name,
             data.status_id,
             data.description,
-        ),
-    )
+            current_user=user,
+            background_tasks=background_tasks
+        )
 
 
 @router.delete("/department/{id}")

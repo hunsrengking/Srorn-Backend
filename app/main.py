@@ -15,7 +15,9 @@ from app.routes import (
     dashboard_route,
     positions_route,
     staff_route,
-    report_route
+    report_route,
+    system_routes,
+    office_routes
 )
 from app.config.db import Base, engine
 from dotenv import load_dotenv
@@ -55,10 +57,17 @@ app.include_router(staff_route.router)
 app.include_router(report_route.router)
 app.include_router(student_route.router)
 app.include_router(organization_route.router)
+app.include_router(system_routes.router)
+app.include_router(office_routes.router)
+
+import os
+
+if not os.path.exists("public/uploads"):
+    os.makedirs("public/uploads")
 
 app.mount(
     "/uploads",
-    StaticFiles(directory="app/uploads"),
+    StaticFiles(directory="public/uploads"),
     name="uploads",
 )
 
@@ -80,6 +89,8 @@ def on_startup():
     import app.schema.staff_schema
     import app.schema.student_schema
     import app.schema.print_card_schema
+    import app.schema.system_schema
+    import app.schema.office_schema
 
     print("Registered tables before create_all():", list(Base.metadata.tables.keys()))
 
