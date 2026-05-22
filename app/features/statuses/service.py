@@ -1,23 +1,25 @@
 from typing import List
-from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
 
-from app.features.statuses.schema import Status
+from sqlalchemy.orm import Session
+
 from app.features.statuses.category_schema import Category
 from app.features.statuses.priority_schema import Priority
+from app.features.statuses.schema import Status
 
 
-def getAllStatus(db: Session) -> List[Status]:
-    return db.query(Status).filter(Status.id.in_([3, 4, 5, 6, 7])).all()
+class StatusService:
+    @staticmethod
+    def getAllStatus(db: Session) -> List[Status]:
+        return db.query(Status).filter(Status.id.in_([3, 4, 5, 6, 7])).all()
 
+    @staticmethod
+    def getAllCategory(db: Session) -> List[Category]:
+        return db.query(Category).all()
 
-def getAllCategory(db: Session) -> List[Category]:
-    return db.query(Category).all()
+    @staticmethod
+    def getAllPriority(db: Session) -> List[Priority]:
+        return db.query(Priority).all()
 
-
-def getAllPriority(db: Session) -> List[Priority]:
-    return db.query(Priority).all()
-
-
-def getPriorityById(db: Session, priority_id: int):
-    return db.query(Priority).filter(Priority.id == priority_id).first()
+    @staticmethod
+    def getPriorityById(db: Session, priority_id: int):
+        return db.query(Priority).filter(Priority.id == priority_id).first()

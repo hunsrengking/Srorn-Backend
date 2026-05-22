@@ -1,130 +1,110 @@
-from app.features.positions.schema import Position
-from app.features.users.schema import User
-from typing import Optional, List
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload, Session
-from fastapi import HTTPException, BackgroundTasks
-from app.features.notifications.service import notify_action
-from app.features.positions.models import PositionCreate, PositionUpdate
 from decimal import Decimal
 
+from fastapi import BackgroundTasks, HTTPException
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
-def getAllPosition(db: Session):
-    return db.query(Position).order_by(Position.title).all()
-
-
-def _validate_salary(min_salary: Decimal | None, max_salary: Decimal | None):
-    # Block negative values
-    if min_salary is not None and min_salary < 0:
-        raise HTTPException(status_code=400, detail="Min salary cannot be negative")
-
-    if max_salary is not None and max_salary < 0:
-        raise HTTPException(status_code=400, detail="Max salary cannot be negative")
-
-    # Ensure min <= max
-    if min_salary is not None and max_salary is not None and min_salary > max_salary:
-        raise HTTPException(
-            status_code=400, detail="Min salary cannot be greater than Max salary"
-        )
+from app.features.notifications.service import NotificationService
+from app.features.positions.models import PositionRequest
+from app.features.positions.schema import Position
 
 
-def create_position(data: PositionCreate, db: Session, current_user=None, background_tasks: BackgroundTasks | None = None):
-    try:
-        _validate_salary(data.min_salary, data.max_salary)
+class PositionService:
+    @staticmethod
+    def getAllPosition(db: Session):
+        return db.query(Position).order_by(Position.title).all()
 
-        position = Position(**data.dict())
-        db.add(position)
-        db.commit()
-        db.refresh(position)
+    @staticmethod
+    def _validate_salary(min_salary: Decimal | None, max_salary: Decimal | None):
+        if min_salary is not None and min_salary < 0:
+            raise HTTPException(status_code=400, detail="Min salary cannot be negative")
 
-        if current_user and background_tasks:
-            telegram_msg = (
-                f"<b>📍 New Position Created:</b> {position.title}\n"
-                f"<b>👤 Created by:</b> {current_user.username}\n"
-                "==============================\n"
-            )
-            notify_action(
-                db=db,
-                user=current_user,
-                title="New Position Created",
-                message=f"Position {position.title} has been added",
-                link=f"/positions",
-                notification_type="position",
-                background_tasks=background_tasks,
-                telegram_message=telegram_msg,
+        if max_salary is not None and max_salary < 0:
+            raise HTTPException(status_code=400, detail="Max salary cannot be negative")
+
+        if min_salary is not None and max_salary is not None and min_salary > max_salary:
+            raise HTTPException(
+                status_code=400,
+                detail="Min salary cannot be greater than Max salary",
             )
 
-        return position
+    @staticmethod
+    def create_position(
+        data: PositionRequest,
+        db: Session,
+        current_user=None,
+        background_tasks: BackgroundTasks | None = None,
+    ):
+        try:
+            if not data.title:
+                raise HTTPException(status_code=400, detail="Position title is required")
 
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Position title already exists")
+            PositionService._validate_salary(data.min_salary, data.max_salary)
 
+            position = Position(**data.model_dump(exclude_unset=True))
+            db.add(position)
+            db.commit()
+            db.refresh(position)
 
-def update_position(position_id: int, data: PositionUpdate, db: Session):
-    position = db.query(Position).filter(Position.id == position_id).first()
+            if current_user and background_tasks:
+                telegram_msg = (
+                    f"<b>New Position Created:</b> {position.title}\n"
+                    f"<b>Created by:</b> {current_user.username}\n"
+                    "==============================\n"
+                )
+                NotificationService.notify_action(
+                    db=db,
+                    user=current_user,
+                    title="New Position Created",
+                    message=f"Position {position.title} has been added",
+                    link="/positions",
+                    notification_type="position",
+                    background_tasks=background_tasks,
+                    telegram_message=telegram_msg,
+                )
 
-    if not position:
-        raise HTTPException(status_code=404, detail="Position not found")
+            return position
 
-    try:
-        _validate_salary(data.min_salary, data.max_salary)
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(status_code=400, detail="Position title already exists")
 
-        for key, value in data.dict(exclude_unset=True).items():
-            setattr(position, key, value)
+    @staticmethod
+    def update_position(position_id: int, data: PositionRequest, db: Session):
+        position = db.query(Position).filter(Position.id == position_id).first()
 
-        db.commit()
-        db.refresh(position)
-        return position
+        if not position:
+            raise HTTPException(status_code=404, detail="Position not found")
 
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Update failed due to invalid data")
+        try:
+            PositionService._validate_salary(data.min_salary, data.max_salary)
 
-    # def create_position(data: PositionCreate, db: Session):
-    #     try:
-    #         position = Position(**data.dict())
-    #         db.add(position)
-    #         db.commit()
-    #         db.refresh(position)
-    #         return position
+            for key, value in data.model_dump(exclude_unset=True).items():
+                setattr(position, key, value)
 
-    #     except IntegrityError:
-    #         db.rollback()
-    #         raise HTTPException(status_code=400, detail="Position title already exists")
+            db.commit()
+            db.refresh(position)
+            return position
 
-    # def update_position(position_id: int, data: PositionUpdate, db: Session):
-    position = db.query(Position).filter(Position.id == position_id).first()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(status_code=400, detail="Update failed due to invalid data")
 
-    if not position:
-        raise HTTPException(status_code=404, detail="Position not found")
+    @staticmethod
+    def delete_position(position_id: int, db: Session):
+        position = db.query(Position).filter(Position.id == position_id).first()
 
-    try:
-        for key, value in data.dict(exclude_unset=True).items():
-            setattr(position, key, value)
+        if not position:
+            raise HTTPException(status_code=404, detail="Position not found")
 
-        db.commit()
-        db.refresh(position)
-        return position
+        try:
+            db.delete(position)
+            db.commit()
+            return {"message": "Position deleted successfully"}
 
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Update failed due to invalid data")
-
-
-def delete_position(position_id: int, db: Session):
-    position = db.query(Position).filter(Position.id == position_id).first()
-
-    if not position:
-        raise HTTPException(status_code=404, detail="Position not found")
-
-    try:
-        db.delete(position)
-        db.commit()
-        return {"message": "Position deleted successfully"}
-
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=409, detail="Cannot delete position because it is in use"
-        )
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(
+                status_code=409,
+                detail="Cannot delete position because it is in use",
+            )

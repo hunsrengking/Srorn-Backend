@@ -1,17 +1,17 @@
 from sqlalchemy.orm import Session
 
-from app.features.dashboard import service as dashboard_service
+from app.features.dashboard.service import DashboardService
 
 
 class DashboardController:
     @staticmethod
     def summary(db: Session):
-        return dashboard_service.get_summary(db)
+        return DashboardService.get_summary(db)
 
     @staticmethod
     def tickets_by_date(db: Session):
-        return dashboard_service.tickets_by_date(db)
+        return DashboardService.tickets_by_date(db)
 
     @staticmethod
     def tickets_by_month(db: Session):
-        return dashboard_service.tickets_by_month(db)
+        return DashboardService.tickets_by_month(db)

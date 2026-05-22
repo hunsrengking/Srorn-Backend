@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from app.features.staff import service as staff_service
-from app.features.staff.models import StaffCreate, StaffUpdate
+from app.features.staff.service import StaffService
+from app.features.staff.models import StaffRequest
 
 
 class StaffController:
@@ -27,24 +27,24 @@ class StaffController:
 
     @staticmethod
     def get_all(db: Session):
-        rows = staff_service.get_all_staff(db)
+        rows = StaffService.get_all_staff(db)
         return [StaffController._to_response(row) for row in rows]
 
     @staticmethod
     def get_by_id(staff_id: int, db: Session):
-        staff = staff_service.get_staff_by_id(staff_id, db)
+        staff = StaffService.get_staff_by_id(staff_id, db)
         return StaffController._to_response(staff)
 
     @staticmethod
-    def create(data: StaffCreate, db: Session, current_user, background_tasks):
-        staff = staff_service.create_staff(data, db, current_user, background_tasks)
+    def create(data: StaffRequest, db: Session, current_user, background_tasks):
+        staff = StaffService.create_staff(data, db, current_user, background_tasks)
         return StaffController._to_response(staff)
 
     @staticmethod
-    def update(staff_id: int, data: StaffUpdate, db: Session):
-        staff = staff_service.update_staff(staff_id, data, db)
+    def update(staff_id: int, data: StaffRequest, db: Session):
+        staff = StaffService.update_staff(staff_id, data, db)
         return StaffController._to_response(staff)
 
     @staticmethod
     def delete(staff_id: int, db: Session):
-        return staff_service.delete_staff(staff_id, db)
+        return StaffService.delete_staff(staff_id, db)

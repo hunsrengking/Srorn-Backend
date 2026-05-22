@@ -1,5 +1,5 @@
 from datetime import datetime
-from app.features.users.service import getUserById
+from app.features.users.service import UserService
 from app.config.iconfig import FRONTEND_URL
 
 
@@ -11,9 +11,9 @@ def build_ticket_email_payload(
     action: str,  # ASSIGNED | REASSIGNED | APPROVED | REJECTED
     action_by_id: int,
 ):
-    to_user = getUserById(db, to_user_id)
-    action_by = getUserById(db, action_by_id)
-    creator = getUserById(db, ticket.created_by_id)
+    to_user = UserService.getUserById(db, to_user_id)
+    action_by = UserService.getUserById(db, action_by_id)
+    creator = UserService.getUserById(db, ticket.created_by_id)
 
     if not to_user or not to_user.email:
         return None

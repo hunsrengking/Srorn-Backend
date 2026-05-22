@@ -9,12 +9,12 @@ from app.features.staff.schema import Staff
 from app.features.students.schema import Student 
 from sqlalchemy.orm import aliased, Session
 from sqlalchemy import func
-from app.features.staff.service import get_all_staff
+from app.features.staff.service import StaffService
 from app.features.students.service import StudentService
 from fastapi import BackgroundTasks
-from app.features.notifications.service import notify_action
+from app.features.notifications.service import NotificationService
 from app.config.iconfig import FRONTEND_URL
-from app.features.organization.models import PrintCardUpdate
+from app.features.organization.models import PrintCardRequest
 from app.features.users.schema import User
 
 class OrganizationService:
@@ -22,7 +22,7 @@ class OrganizationService:
     @staticmethod
     def getAllPrintCardTemplate(db):
         try:
-            staffs = get_all_staff(db)
+            staffs = StaffService.get_all_staff(db)
             students = StudentService.get_all_students(db)
             
             # Fetch positions
@@ -132,9 +132,17 @@ class OrganizationService:
 
 
     @staticmethod
-    def PrintCardNew(print_card_data, db, current_user, background_tasks: BackgroundTasks):
+    def PrintCardNew(print_card_data: PrintCardRequest, db, current_user, background_tasks: BackgroundTasks):
         try:
-            data = print_card_data.dict()
+            data = print_card_data.model_dump(exclude_unset=True)
+            required_fields = ["entry_id", "print_date", "seller_id"]
+            missing_fields = [field for field in required_fields if data.get(field) is None]
+            if missing_fields:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Missing required field(s): {', '.join(missing_fields)}",
+                )
+
             mappings = data.pop("mappings", [])
 
             new_print_card = PrintCard(**data)
@@ -163,7 +171,7 @@ class OrganizationService:
                 f'🔗 <a href="{card_url}">View Print Card</a>'
             )
 
-            notify_action(
+            NotificationService.notify_action(
                 db=db,
                 user=current_user,
                 title="New Print Card Created",
@@ -176,6 +184,8 @@ class OrganizationService:
 
             return new_print_card
 
+        except HTTPException:
+            raise
         except Exception as e:
             db.rollback()
             raise HTTPException(
@@ -184,7 +194,7 @@ class OrganizationService:
             )
 
     @staticmethod
-    def UpdatePrintCard(print_card_id: int, print_card_data: PrintCardUpdate, db: Session, current_user: User, background_tasks: BackgroundTasks):
+    def UpdatePrintCard(print_card_id: int, print_card_data: PrintCardRequest, db: Session, current_user: User, background_tasks: BackgroundTasks):
         try:
             # Fetch the print card
             print_card = db.query(PrintCard).filter(PrintCard.id == print_card_id).first()
@@ -192,7 +202,7 @@ class OrganizationService:
                 raise HTTPException(status_code=404, detail="Print card not found")
 
             # Update fields
-            update_data = print_card_data.dict(exclude_unset=True)
+            update_data = print_card_data.model_dump(exclude_unset=True)
             
             # Handle mappings update
             mappings_data = update_data.pop("mappings", None)
@@ -230,7 +240,7 @@ class OrganizationService:
                 f'🔗 <a href="{card_url}">View Print Card</a>'
             )
 
-            notify_action(
+            NotificationService.notify_action(
                 db=db,
                 user=current_user,
                 title="Print Card Updated",
@@ -243,6 +253,8 @@ class OrganizationService:
 
             return print_card
 
+        except HTTPException:
+            raise
         except SQLAlchemyError as e:
             db.rollback()
             raise HTTPException(status_code=500, detail=str(e))

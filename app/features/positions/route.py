@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config.db import get_db
 from app.features.positions.controller import PositionController
-from app.features.positions.models import PositionCreate, PositionResponse, PositionUpdate
+from app.features.positions.models import PositionRequest, PositionResponse
 from app.middlewares.auth_middlewares import get_current_user, require_permission
 
 router = APIRouter(prefix="/api/positions", tags=["positions"])
@@ -16,7 +16,7 @@ def getAllPositions(db: Session = Depends(get_db)):
 
 @router.post("", response_model=PositionResponse)
 def create_position(
-    data: PositionCreate,
+    data: PositionRequest,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
     background_tasks: BackgroundTasks = BackgroundTasks(),
@@ -27,7 +27,7 @@ def create_position(
 @router.put("/{position_id}", response_model=PositionResponse)
 def update_position(
     position_id: int,
-    data: PositionUpdate,
+    data: PositionRequest,
     db: Session = Depends(get_db),
 ):
     return PositionController.update(position_id, data, db)

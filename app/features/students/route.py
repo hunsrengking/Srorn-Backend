@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.config.db import get_db
 from app.features.students.controller import StudentController
-from app.features.students.models import StudentCreate, StudentResponse, StudentUpdate
+from app.features.students.models import StudentRequest, StudentResponse
 from app.middlewares.auth_middlewares import get_current_user
 
 router = APIRouter(prefix="/api/students", tags=["Students"])
@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/students", tags=["Students"])
 
 @router.post("/", response_model=StudentResponse)
 def create_student(
-    student: StudentCreate, 
+    student: StudentRequest,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
     background_tasks: BackgroundTasks = BackgroundTasks(),
@@ -30,7 +30,7 @@ def get_student(student_id: int, db: Session = Depends(get_db)):
 
 @router.put("/{student_id}", response_model=StudentResponse)
 def update_student(
-    student_id: int, student: StudentUpdate, db: Session = Depends(get_db)
+    student_id: int, student: StudentRequest, db: Session = Depends(get_db)
 ):
     return StudentController.update(student_id, student, db)
 

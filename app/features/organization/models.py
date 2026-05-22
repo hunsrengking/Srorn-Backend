@@ -1,41 +1,16 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Any, Optional
+
 from pydantic import BaseModel, Field
-from app.features.staff.models import StaffResponse
-from app.features.students.models import StudentResponse
-from app.features.positions.models import PositionResponse
 
 
-
-class PrintCardMapping(BaseModel):
-    print_card_id: int | None = None
-    cable_color_id: Optional[int] = None
-    quantity: int = Field(default=1, gt=0)
-
-    class Config:
-        from_attributes = True
-
-
-class PrintCardCreate(BaseModel):
-    entry_id: int
-    print_date: datetime
-    is_print_card: bool
-    seller_id: int
-    description: str | None
-    mappings: List[PrintCardMapping] = []
-
-class PrintCardUpdate(BaseModel):
-    entry_id: Optional[int] = None
-    print_date: Optional[datetime] = None
-    is_print_card: Optional[bool] = None
-    seller_id: Optional[int] = None
-    description: Optional[str] = None
-    mappings: Optional[List[PrintCardMapping]] = None
-
-class PrintCardTemplate(BaseModel):
-    staffs: List[StaffResponse]
-    students: List[StudentResponse]
-    positions: List[PositionResponse]
+class PrintCardRequest(BaseModel):
+    entry_id: int | None = None
+    print_date: datetime | None = None
+    is_print_card: bool | None = True
+    seller_id: int | None = None
+    description: str | None = None
+    mappings: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class PrintCardResponse(BaseModel):
@@ -48,7 +23,7 @@ class PrintCardResponse(BaseModel):
     seller_id: int
     seller_name: Optional[str] = None
     description: Optional[str] = None
-    mappings: List[PrintCardMapping] = []
+    mappings: list[dict[str, Any]] = Field(default_factory=list)
 
     class Config:
-        from_attributes = True
+        from_attributes = True

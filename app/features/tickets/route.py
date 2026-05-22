@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config.db import get_db
 from app.features.tickets.controller import TicketController
-from app.features.tickets.models import TicketCreateReq, TicketResp, TicketUpdateReq
+from app.features.tickets.models import TicketRequest, TicketResponse
 from app.features.users.schema import User
 from app.middlewares.auth_middlewares import get_current_user, require_permission
 
@@ -30,9 +30,9 @@ def getTicketById(id: int, db: Session = Depends(get_db)):
     return TicketController.get_by_id(id, db)
 
 
-@router.post("", response_model=TicketResp)
+@router.post("", response_model=TicketResponse)
 def CreateTicket(
-    data: TicketCreateReq,
+    data: TicketRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -40,10 +40,10 @@ def CreateTicket(
     return TicketController.create(data, background_tasks, db, current_user)
 
 
-@router.patch("/{ticket_id}", response_model=TicketResp)
+@router.patch("/{ticket_id}", response_model=TicketResponse)
 def UpdateTicket(
     ticket_id: int,
-    data: TicketUpdateReq,
+    data: TicketRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),

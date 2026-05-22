@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config.db import get_db
 from app.features.departments.controller import DepartmentController
-from app.features.departments.models import DepartmentModel
+from app.features.departments.models import DepartmentRequest
 from app.middlewares.auth_middlewares import require_permission
 
 router = APIRouter(prefix="/api/department")
@@ -28,7 +28,7 @@ def getDepartmentById(
 
 @router.post("")
 def createDepartment(
-    data: DepartmentModel,
+    data: DepartmentRequest,
     db: Session = Depends(get_db),
     user=Depends(require_permission("CREATE_DEPARTMENT")),
     background_tasks: BackgroundTasks = BackgroundTasks(),

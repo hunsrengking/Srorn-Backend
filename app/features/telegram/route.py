@@ -3,11 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config.db import get_db
 from app.features.telegram.controller import TelegramController
-from app.features.telegram.models import (
-    TelegramConfigCreate,
-    TelegramConfigResponse,
-    TelegramConfigUpdate,
-)
+from app.features.telegram.models import TelegramConfigRequest, TelegramConfigResponse
 from app.middlewares.auth_middlewares import require_permission
 
 router = APIRouter(prefix="/api/telegram", tags=["Telegram"])
@@ -20,7 +16,7 @@ def list_configs(db: Session = Depends(get_db)):
 
 @router.post("", response_model=TelegramConfigResponse)
 def create_config(
-    data: TelegramConfigCreate,
+    data: TelegramConfigRequest,
     db: Session = Depends(get_db),
 ):
     return TelegramController.create_config(data, db)
@@ -29,7 +25,7 @@ def create_config(
 @router.put("/{config_id}", response_model=TelegramConfigResponse)
 def update_config(
     config_id: int,
-    data: TelegramConfigUpdate,
+    data: TelegramConfigRequest,
     db: Session = Depends(get_db),
 ):
     return TelegramController.update_config(config_id, data, db)

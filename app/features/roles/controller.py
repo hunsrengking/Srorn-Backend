@@ -1,14 +1,14 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.features.roles import service as role_service
-from app.features.roles.models import RoleCreateReq, RolePermsReq
+from app.features.roles.service import RoleService
+from app.features.roles.models import RoleRequest
 
 
 class RoleController:
     @staticmethod
     def list_roles(db: Session):
-        roles = role_service.getAllRole(db)
+        roles = RoleService.getAllRole(db)
         return [
             {
                 "id": role.id,
@@ -24,7 +24,7 @@ class RoleController:
 
     @staticmethod
     def get_by_id(role_id: int, db: Session):
-        role = role_service.getRoleById(db, role_id)
+        role = RoleService.getRoleById(db, role_id)
         if not role:
             raise HTTPException(
                 status_code=404,
@@ -41,8 +41,11 @@ class RoleController:
         }
 
     @staticmethod
-    def create(data: RoleCreateReq, db: Session):
-        role = role_service.createRole(db, data.name, data.description)
+    def create(data: RoleRequest, db: Session):
+        if not data.name:
+            raise HTTPException(status_code=400, detail="Role name required")
+
+        role = RoleService.createRole(db, data.name, data.description)
         return {
             "id": role.id,
             "name": role.name,
@@ -52,11 +55,11 @@ class RoleController:
 
     @staticmethod
     def disable(role_id: int, db: Session):
-        return role_service.disableRole(db, role_id)
+        return RoleService.disableRole(db, role_id)
 
     @staticmethod
-    def update_permissions(role_id: int, data: RolePermsReq, db: Session):
-        role = role_service.updateRolePermissionsById(db, role_id, data.permissions)
+    def update_permissions(role_id: int, data: RoleRequest, db: Session):
+        role = RoleService.updateRolePermissionsById(db, role_id, data.permissions)
         return {
             "id": role.id,
             "name": role.name,
@@ -65,7 +68,7 @@ class RoleController:
 
     @staticmethod
     def list_permissions(db: Session):
-        permissions = role_service.getAllPermissions(db)
+        permissions = RoleService.getAllPermissions(db)
         return [
             {
                 "id": permission.id,

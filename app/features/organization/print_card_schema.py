@@ -2,7 +2,6 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, T
 from sqlalchemy.orm import relationship
 from app.config.db import Base
 
-
 print_cards_mapping = Table(
     "print_cards_mapping",
     Base.metadata,
@@ -19,10 +18,7 @@ class PrintCard(Base):
     entry_id = Column(Integer, nullable=False)
     print_date = Column(DateTime, nullable=False)
     is_print_card = Column(Boolean, default=True)
-
-    # FIX HERE
     seller_id = Column(Integer, ForeignKey("staff.id"), nullable=False)
-
     description = Column(String(255), nullable=True)
-
+    
     seller = relationship("Staff", back_populates="print_cards")

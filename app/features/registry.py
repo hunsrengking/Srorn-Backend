@@ -20,6 +20,7 @@ ROUTER_MODULES = [
     "app.features.organization.route",
     "app.features.system.route",
     "app.features.offices.route",
+    "app.features.code.route",
 ]
 
 
@@ -41,6 +42,7 @@ DATABASE_MODEL_MODULES = [
     "app.features.organization.print_card_schema",
     "app.features.system.schema",
     "app.features.offices.schema",
+    "app.features.code.schema",
 ]
 
 

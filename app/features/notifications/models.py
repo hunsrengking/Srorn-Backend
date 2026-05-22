@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime
 
 
-class NotificationCreate(BaseModel):
+class NotificationRequest(BaseModel):
     user_id: int
     title: str
     message: str
@@ -11,7 +11,7 @@ class NotificationCreate(BaseModel):
     type: Optional[str] = "ticket"
 
 
-class NotificationResp(BaseModel):
+class NotificationResponse(BaseModel):
     id: int
     title: str
     message: str

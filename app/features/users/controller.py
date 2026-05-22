@@ -1,39 +1,52 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.features.users import service as user_service
-from app.features.users.models import ChangePasswordModel, UserModel
+from app.features.users.service import UserService
+from app.features.users.models import UserRequest
 
 
 class UserController:
     @staticmethod
-    def list_users(db: Session):
-        return user_service.getAllUser(db)
+    def getUsers(db: Session):
+        return UserService.getAllUser(db)
 
     @staticmethod
-    def get_by_id(user_id: int, db: Session):
-        user = user_service.getUserById(db, user_id)
+    def getById(user_id: int, db: Session):
+        user = UserService.getUserById(db, user_id)
         if not user:
-            raise HTTPException(status_code=404, detail=f"User with id={user_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"User with id={user_id} not found"
+            )
         return user
 
     @staticmethod
-    def create(data: UserModel, db: Session):
+    def create(data: UserRequest, db: Session):
+        missing_fields = [
+            field
+            for field in ("username", "email", "password", "role_id")
+            if getattr(data, field) is None
+        ]
+        if missing_fields:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Missing required field(s): {', '.join(missing_fields)}",
+            )
+
         return (
-            user_service.create_user(
+            UserService.createUser(
                 db,
-                data.username,
-                data.email,
-                data.password,
-                data.role_id,
+                data.username,  # type: ignore[arg-type]
+                data.email,  # type: ignore[arg-type]
+                data.password,  # type: ignore[arg-type]
+                data.role_id,  # type: ignore[arg-type]
                 data.department_id,
                 data.staff_id,
             ),
         )
 
     @staticmethod
-    def update(user_id: int, data: UserModel, db: Session):
-        updated_user = user_service.update_user(
+    def update(user_id: int, data: UserRequest, db: Session):
+        updated_user = UserService.updateUser(
             db,
             user_id,
             username=data.username,
@@ -44,24 +57,28 @@ class UserController:
             staff_id=data.staff_id,
         )
         if not updated_user:
-            raise HTTPException(status_code=404, detail=f"User with id={user_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"User with id={user_id} not found"
+            )
         return updated_user
 
     @staticmethod
     def delete(user_id: int, db: Session):
-        deleted_user = user_service.delete_user(db, user_id)
+        deleted_user = UserService.deleteUser(db, user_id)
         if not deleted_user:
-            raise HTTPException(status_code=404, detail=f"User with id={user_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"User with id={user_id} not found"
+            )
         return {"message": f"User with id={user_id} has been deleted"}
 
     @staticmethod
-    def admin_change_password(user_id: int, data: dict, db: Session):
-        password = data.get("password")
-        return user_service.admin_change_password(db, user_id, password)  # type: ignore
+    def admin_change_password(user_id: int, data: UserRequest, db: Session):
+        password = data.password or data.new_password
+        return UserService.admin_change_password(db, user_id, password)  # type: ignore
 
     @staticmethod
-    def change_password(user_id: int, data: ChangePasswordModel, db: Session):
-        return user_service.change_password(
+    def change_password(user_id: int, data: UserRequest, db: Session):
+        return UserService.change_password(
             db,
             user_id,
             data.old_password,
@@ -69,5 +86,5 @@ class UserController:
         )
 
     @staticmethod
-    def get_users_without_department(db: Session):
-        return user_service.getUsersWithoutDepartment(db)
+    def getUsersWithoutDepartment(db: Session):
+        return UserService.getUsersWithoutDepartment(db)

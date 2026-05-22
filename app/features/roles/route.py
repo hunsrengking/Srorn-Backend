@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config.db import get_db
 from app.features.roles.controller import RoleController
-from app.features.roles.models import RoleCreateReq, RolePermsReq
+from app.features.roles.models import RoleRequest
 from app.middlewares.auth_middlewares import require_permission
 
 router = APIRouter(prefix="/api")
@@ -20,7 +20,7 @@ def getRole(role_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/role")
-def createRole(data: RoleCreateReq, db: Session = Depends(get_db)):
+def createRole(data: RoleRequest, db: Session = Depends(get_db)):
     return RoleController.create(data, db)
 
 
@@ -36,7 +36,7 @@ def DisableRole(
 @router.put("/role/{role_id}/permissions")
 def updatePermissions(
     role_id: int,
-    data: RolePermsReq,
+    data: RoleRequest,
     db: Session = Depends(get_db),
 ):
     return RoleController.update_permissions(role_id, data, db)

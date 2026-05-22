@@ -2,7 +2,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from fastapi import HTTPException, BackgroundTasks
 from app.features.positions.schema import Position
 from app.features.students.schema import Student
-from app.features.notifications.service import notify_action
+from app.features.notifications.service import NotificationService
 
 
 class StudentService:
@@ -10,7 +10,13 @@ class StudentService:
     @staticmethod
     def create_student(student_data, db, current_user=None, background_tasks: BackgroundTasks | None = None):
         try:
-            data = student_data.dict()
+            data = student_data.model_dump(exclude_unset=True)
+
+            if not data.get("firstname") or not data.get("lastname"):
+                raise HTTPException(
+                    status_code=400,
+                    detail="firstname and lastname are required",
+                )
 
             # auto generate display_name
             firstname = data.get("firstname", "")
@@ -29,7 +35,7 @@ class StudentService:
                     f"<b>👤 Created by:</b> {current_user.username}\n"
                     "==============================\n"
                 )
-                notify_action(
+                NotificationService.notify_action(
                     db=db,
                     user=current_user,
                     title="New Student Created",

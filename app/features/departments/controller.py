@@ -1,18 +1,18 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.features.departments import service as department_service
-from app.features.departments.models import DepartmentModel
+from app.features.departments.service import DepartmentService
+from app.features.departments.models import DepartmentRequest
 
 
 class DepartmentController:
     @staticmethod
     def list_departments(db: Session):
-        return department_service.getAllDepartment(db)
+        return DepartmentService.getAllDepartment(db)
 
     @staticmethod
     def get_by_id(department_id: int, db: Session):
-        department = department_service.getDepartmentById(db, department_id)
+        department = DepartmentService.getDepartmentById(db, department_id)
         if not department:
             raise HTTPException(
                 status_code=404,
@@ -22,12 +22,12 @@ class DepartmentController:
 
     @staticmethod
     def create(
-        data: DepartmentModel,
+        data: DepartmentRequest,
         db: Session,
         current_user,
         background_tasks,
     ):
-        return department_service.createDepartment(
+        return DepartmentService.createDepartment(
             db,
             data.name,
             data.status_id,
@@ -38,7 +38,7 @@ class DepartmentController:
 
     @staticmethod
     def disable(department_id: int, db: Session):
-        disabled_department = department_service.DisableDepartment(db, department_id)
+        disabled_department = DepartmentService.DisableDepartment(db, department_id)
         if not disabled_department:
             raise HTTPException(
                 status_code=404,
@@ -52,8 +52,8 @@ class DepartmentController:
         if not user_id:
             raise HTTPException(status_code=400, detail="userId is required")
 
-        return department_service.addMemberToDepartment(db, department_id, user_id)
+        return DepartmentService.addMemberToDepartment(db, department_id, user_id)
 
     @staticmethod
     def remove_member(department_id: int, user_id: int, db: Session):
-        return department_service.removeMemberFromDepartment(db, department_id, user_id)
+        return DepartmentService.removeMemberFromDepartment(db, department_id, user_id)

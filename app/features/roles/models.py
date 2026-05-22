@@ -1,10 +1,14 @@
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseModel, Field
 
-class RoleCreateReq(BaseModel):
+
+class RoleRequest(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    permissions: list[int] = Field(default_factory=list)
+
+
+class RoleResponse(BaseModel):
+    id: int
     name: str
-    description: str
-
-
-class RolePermsReq(BaseModel):
-    permissions: List[int]
+    description: str | None = None
+    permissions: list[dict] = Field(default_factory=list)

@@ -1,17 +1,17 @@
 from sqlalchemy.orm import Session
 
-from app.features.statuses import service as status_service
+from app.features.statuses.service import StatusService
 
 
 class StatusController:
     @staticmethod
     def get_all_status(db: Session):
-        return status_service.getAllStatus(db)
+        return StatusService.getAllStatus(db)
 
     @staticmethod
     def get_all_category(db: Session):
-        return status_service.getAllCategory(db)
+        return StatusService.getAllCategory(db)
 
     @staticmethod
     def get_all_priority(db: Session):
-        return status_service.getAllPriority(db)
+        return StatusService.getAllPriority(db)

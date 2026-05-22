@@ -4,13 +4,38 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.config.db import get_db
-from app.features.auth import service as auth_service
-from app.features.users import service as user_service
-from app.features.roles import service as role_service
+from app.features.auth.service import AuthService
+from app.features.users.service import UserService
+from app.features.roles.service import RoleService
 import logging
 
 auth_scheme = HTTPBearer(auto_error=False)
 logger = logging.getLogger("app.auth")
+PRIVILEGED_ROLE_NAMES = {"admin", "super admin", "superadmin"}
+
+
+def _normalize_role_name(role_name: str | None) -> str:
+    return (role_name or "").strip().lower().replace("_", " ").replace("-", " ")
+
+
+def is_privileged_role(role) -> bool:
+    role_name = _normalize_role_name(getattr(role, "name", None))
+    compact_role_name = role_name.replace(" ", "")
+    return (
+        role_name in PRIVILEGED_ROLE_NAMES or compact_role_name in PRIVILEGED_ROLE_NAMES
+    )
+
+
+def user_has_permission(current_user, permission_name: str) -> bool:
+    role = getattr(current_user, "role", None)
+    if not role:
+        return False
+
+    if is_privileged_role(role):
+        return True
+
+    user_permissions = [p.name for p in getattr(role, "permissions", [])]
+    return permission_name in user_permissions
 
 
 def get_current_user(
@@ -28,7 +53,7 @@ def get_current_user(
     token = credentials.credentials
 
     try:
-        payload = auth_service.decode_access_token(token)
+        payload = AuthService.decode_access_token(token)
     except Exception as e:
         # decode_access_token typically raises on invalid/expired token
         logger.warning("Token decode failed: %s", e)
@@ -58,7 +83,7 @@ def get_current_user(
 
     # 4) Retrieve user from DB
     try:
-        user = user_service.getUserById(db, int(user_id))
+        user = UserService.getUserById(db, int(user_id))
     except Exception as e:
         logger.error("Error fetching user from DB (id=%s): %s", user_id, e)
         raise HTTPException(
@@ -88,8 +113,7 @@ def requirepermissions(permission_name: str):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN, detail="No role assigned"
                 )
-            user_permissions = [p.name for p in getattr(role, "permissions", [])]
-            if permission_name not in user_permissions:
+            if not user_has_permission(current_user, permission_name):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
                 )
@@ -105,8 +129,7 @@ def requirepermissions(permission_name: str):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN, detail="No role assigned"
                 )
-            user_permissions = [p.name for p in getattr(role, "permissions", [])]
-            if permission_name not in user_permissions:
+            if not user_has_permission(current_user, permission_name):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
                 )
@@ -118,21 +141,16 @@ def requirepermissions(permission_name: str):
 
 
 def require_permission(permission_name: str):
-    """
-    Dependency function to check if the current user has the required permission.
-    Usage: def delete_user(id: int, user=Depends(require_permission("delete_user"))):
-    """
     async def check_permission(current_user=Depends(get_current_user)):
         role = getattr(current_user, "role", None)
         if not role:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="No role assigned"
             )
-        user_permissions = [p.name for p in getattr(role, "permissions", [])]
-        if permission_name not in user_permissions:
+        if not user_has_permission(current_user, permission_name):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, 
-                detail=f"Permission denied: {permission_name} is required"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission denied: {permission_name} is required",
             )
         return current_user
 

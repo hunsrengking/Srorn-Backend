@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config.db import get_db
 from app.features.staff.controller import StaffController
-from app.features.staff.models import StaffCreate, StaffResponse, StaffUpdate
+from app.features.staff.models import StaffRequest, StaffResponse
 from app.middlewares.auth_middlewares import get_current_user, require_permission
 
 router = APIRouter(prefix="/api/staff", tags=["Staff"])
@@ -21,7 +21,7 @@ def get_staff(staff_id: int, db: Session = Depends(get_db)):
 
 @router.post("", response_model=StaffResponse)
 def create_staff(
-    data: StaffCreate,
+    data: StaffRequest,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
     background_tasks: BackgroundTasks = BackgroundTasks(),
@@ -32,7 +32,7 @@ def create_staff(
 @router.put("/{staff_id}", response_model=StaffResponse)
 def update_staff(
     staff_id: int,
-    data: StaffUpdate,
+    data: StaffRequest,
     db: Session = Depends(get_db),
 ):
     return StaffController.update(staff_id, data, db)

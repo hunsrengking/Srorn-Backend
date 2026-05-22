@@ -1,7 +1,7 @@
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi import HTTPException, BackgroundTasks
 from app.features.offices.schema import Office
-from app.features.notifications.service import notify_action
+from app.features.notifications.service import NotificationService
 
 
 class OfficeService:
@@ -9,7 +9,12 @@ class OfficeService:
     @staticmethod
     def created(office_data, db, current_user=None, background_tasks: BackgroundTasks | None = None):
         try:
-            data = office_data.dict()
+            data = office_data.model_dump(exclude_none=True)
+            if not data.get("external_id") or not data.get("name"):
+                raise HTTPException(
+                    status_code=400,
+                    detail="external_id and name are required",
+                )
             new_office = Office(**data)
 
             db.add(new_office)
@@ -22,7 +27,7 @@ class OfficeService:
                     f"<b>👤 Created by:</b> {current_user.username}\n"
                     "==============================\n"
                 )
-                notify_action(
+                NotificationService.notify_action(
                     db=db,
                     user=current_user,
                     title="New Office Created",
@@ -111,7 +116,7 @@ class OfficeService:
                     f"<b>👤 Updated by:</b> {current_user.username}\n"
                     "==============================\n"
                 )
-                notify_action(
+                NotificationService.notify_action(
                     db=db,
                     user=current_user,
                     title="Office Updated",
@@ -144,7 +149,7 @@ class OfficeService:
                     f"<b>👤 Deleted by:</b> {current_user.username}\n"
                     "==============================\n"
                 )
-                notify_action(
+                NotificationService.notify_action(
                     db=db,
                     user=current_user,
                     title="Office Deleted",

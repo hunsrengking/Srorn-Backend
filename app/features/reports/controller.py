@@ -14,7 +14,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.features.reports import service as report_service
+from app.features.reports.service import ReportService
 
 COMPANY_NAME = "PRINCE TUFU SUPPORT SYSTEM"
 REPORT_TITLE = "REPORT DATA"
@@ -32,7 +32,7 @@ class ReportController:
         to_date: str | None = None,
         status: str | None = None,
     ):
-        return report_service.getReports(db, from_date, to_date, status)
+        return ReportService.getReports(db, from_date, to_date, status)
 
     @staticmethod
     def export_reports(
@@ -42,7 +42,7 @@ class ReportController:
         status: str | None,
         export_type: Literal["csv", "excel", "pdf"],
     ):
-        reports = report_service.getReports(db, from_date, to_date, status)
+        reports = ReportService.getReports(db, from_date, to_date, status)
 
         if not reports:
             raise HTTPException(status_code=404, detail="No report data found")

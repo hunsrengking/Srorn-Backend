@@ -1,2 +1,4 @@
-import os
-FRONTEND_URL = os.getenv("FRONTEND_URL", "").rstrip("/")
+from app.config.settings import get_settings
+
+
+FRONTEND_URL = get_settings().frontend_url

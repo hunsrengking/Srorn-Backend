@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.config.db import get_db
 from app.features.offices.controller import OfficeController
-from app.features.offices.models import OfficeCreate, OfficeResponse, OfficeUpdate
+from app.features.offices.models import OfficeRequest, OfficeResponse
 from app.middlewares.auth_middlewares import get_current_user
 
 router = APIRouter(prefix="/api/offices", tags=["Offices"])
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api/offices", tags=["Offices"])
 
 @router.post("", response_model=OfficeResponse)
 def create_office(
-    office: OfficeCreate,
+    office: OfficeRequest,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
     background_tasks: BackgroundTasks = BackgroundTasks(),
@@ -32,7 +32,7 @@ def get_office(office_id: int, db: Session = Depends(get_db)):
 @router.put("/{office_id}", response_model=OfficeResponse)
 def update_office(
     office_id: int,
-    office: OfficeUpdate,
+    office: OfficeRequest,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
     background_tasks: BackgroundTasks = BackgroundTasks(),
