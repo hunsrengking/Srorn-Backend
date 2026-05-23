@@ -1,7 +1,7 @@
 from fastapi import HTTPException, BackgroundTasks
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import func, or_
+from sqlalchemy import text
 
 from app.config.iconfig import FRONTEND_URL
 from app.features.setting.code.service import CodeService
@@ -18,107 +18,44 @@ from app.features.students.schema import Student
 from app.features.students.service import StudentService
 
 
-class OrganizationService:
-
-    # ─────────────────────────────────────────────────────────────
-    # Helpers
-    # ─────────────────────────────────────────────────────────────
+class PrintCardService:
 
     @staticmethod
-    def print_card(db):
-
-        EntryStaff = aliased(Staff)
-        SellerStaff = aliased(Staff)
-        StaffPosition = aliased(Position)
-        StudentPosition = aliased(Position)
-
-        return (
-            db.query(
-                PrintCard.id,
-                func.coalesce(
-                    PrintCard.staff_id,
-                    PrintCard.student_id,
-                ).label("entry_id"),
-                func.coalesce(
-                    EntryStaff.display_name,
-                    Student.display_name,
-                ).label("person_name"),
-                func.coalesce(
-                    StaffPosition.title,
-                    StudentPosition.title,
-                ).label("position_name"),
-                PrintCard.print_date,
-                PrintCard.is_print_card,
-                PrintCard.seller_id,
-                SellerStaff.display_name.label("seller_name"),
-                PrintCard.description,
-                func.if_(
-                    PrintCard.staff_id != None,
-                    "staff",
-                    "student",
-                ).label("entity_type"),
-            )
-            .outerjoin(
-                EntryStaff,
-                EntryStaff.id == PrintCard.staff_id,
-            )
-            .outerjoin(
-                Student,
-                Student.id == PrintCard.student_id,
-            )
-            .outerjoin(
-                StaffPosition,
-                StaffPosition.id == EntryStaff.position_id,
-            )
-            .outerjoin(
-                StudentPosition,
-                StudentPosition.id == Student.position_id,
-            )
-            .outerjoin(
-                SellerStaff,
-                SellerStaff.id == PrintCard.seller_id,
-            )
-        )
-
-    # ─────────────────────────────────────────────────────────────
-    # Templates
-    # ─────────────────────────────────────────────────────────────
-
-    @staticmethod
-    def getAllPrintCardTemplate(db):
-
+    def getPrintCardData(db):
         try:
+            sql = text("""
+                SELECT
+                    pc.id,
+                    s.id as student_id,
+                    s.display_name as student_name,
+                    pc.print_date as print_date,
+                    pc.is_print_card as is_print_card,
+                    teac.id as teacher_id,
+                    teac.display_name as teacher_name,
+                    sel.id as seller_id,
+                    sel.display_name as seller_name,
+                    pc.description
+                FROM
+                    print_cards pc
+                LEFT JOIN students s ON pc.student_id = s.id
+                LEFT JOIN staff teac ON pc.staff_id = teac.id
+                LEFT JOIN staff sel ON pc.seller_id = sel.id
+                GROUP BY 
+                    pc.id,
+                    s.id,
+                    s.display_name,
+                    pc.print_date,
+                    pc.is_print_card,
+                    teac.id,
+                    teac.display_name,
+                    sel.id,
+                    sel.display_name,
+                    pc.description
+            """)
 
-            staffs = [dict(s._mapping) for s in StaffService.get_all_staff(db)]
+            results = db.execute(sql).fetchall()
 
-            students = StudentService.get_all_students(db)
-
-            colors = [
-                {
-                    "id": c.id,
-                    "code_value": c.code_value,
-                    "code_description": c.code_description,
-                }
-                for c in CodeService.getCodeValueByCode(
-                    "Cable Color",
-                    db,
-                )
-            ]
-
-            positions = db.query(Position).filter(Position.is_active == True).all()
-
-            return {
-                "staffs": staffs,
-                "students": students,
-                "positions": [
-                    {
-                        "id": p.id,
-                        "title": p.title,
-                    }
-                    for p in positions
-                ],
-                "card_colors": colors,
-            }
+            return [PrintCardService.PrintCardDataMapper(row) for row in results]
 
         except SQLAlchemyError as e:
             raise HTTPException(
@@ -126,6 +63,67 @@ class OrganizationService:
                 detail=str(e),
             )
 
+    @staticmethod
+    def getPrintCardMappingByCardId(print_card_id, db):
+        try:
+            sql = text("""
+                SELECT
+                    pcm.print_card_id,
+                    pcm.cable_color_id,
+                    pcm.quantity,
+                    cc.code_value as cable_color_value
+                FROM
+                    print_cards_mapping pcm
+                LEFT JOIN code_values cc ON pcm.cable_color_id = cc.id
+                WHERE pcm.print_card_id = :print_card_id
+            """)
+
+            results = db.execute(sql, {"print_card_id": print_card_id}).fetchall()
+
+            return [
+                {
+                    "print_card_id": row.print_card_id,
+                    "cable_color_id": row.cable_color_id,
+                    "quantity": row.quantity,
+                    "cable_color_value": row.cable_color_value,
+                }
+                for row in results
+            ]
+
+        except SQLAlchemyError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=str(e),
+            )
+
+    @staticmethod
+    def PrintCardDataMapper(
+        row,
+    ):
+        student_id = row.student_id
+        staff_id = row.staff_id
+        entry_id = student_id if student_id is not None else staff_id
+        entity_type = "student" if student_id is not None else "staff"
+
+        return {
+            "id": row.id,
+            "student_id": student_id,
+            "student_name": row.student_name,
+            "print_date": row.print_date,
+            "is_print_card": row.is_print_card,
+            "staff_id": staff_id,
+            "staff_name": row.staff_name,
+            "seller_id": row.seller_id,
+            "seller_name": row.seller_name,
+            "description": row.description,
+            "person_name": row.student_name or row.staff_name,
+            "entry_id": entry_id,
+            "entity_type": entity_type,
+        }
+
+    # ─────────────────────────────────────────────────────────────
+    # Templates
+    # ─────────────────────────────────────────────────────────────
     @staticmethod
     def getPrintCardStudentTemplate(entity_id, db):
 
@@ -212,50 +210,54 @@ class OrganizationService:
             )
 
     # ─────────────────────────────────────────────────────────────
-    # List
+    # Detail
     # ─────────────────────────────────────────────────────────────
 
     @staticmethod
-    def getAllPrintCard(
-        db,
-        entry_id: int = None,  # type: ignore
-        entity_type: str = None,  # type: ignore
-    ):
+    def getPrintCardById(print_card_id, db):
 
         try:
+            sql = text("""
+                SELECT
+                    pc.id,
+                    s.id as student_id,
+                    s.display_name as student_name,
+                    pc.print_date as print_date,
+                    pc.is_print_card as is_print_card,
+                    teac.id as staff_id,
+                    teac.display_name as staff_name,
+                    sel.id as seller_id,
+                    sel.display_name as seller_name,
+                    pc.description
+                FROM
+                    print_cards pc
+                LEFT JOIN students s ON pc.student_id = s.id
+                LEFT JOIN staff teac ON pc.staff_id = teac.id
+                LEFT JOIN staff sel ON pc.seller_id = sel.id
+                WHERE pc.id = :print_card_id
+                LIMIT 1
+            """)
 
-            query = OrganizationService.print_card(db)
+            result = db.execute(sql, {"print_card_id": print_card_id}).fetchone()
 
-            if entry_id is not None:
+            if not result:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Print card not found",
+                )
 
-                if entity_type == "student":
+            # Map to dictionary
+            card_dict = PrintCardService.PrintCardDataMapper(result)
 
-                    query = query.filter(PrintCard.student_id == entry_id)
+            # Load mappings
+            card_dict["mappings"] = PrintCardService.getPrintCardMappingByCardId(
+                print_card_id, db
+            )
 
-                elif entity_type == "staff":
+            return card_dict
 
-                    query = query.filter(PrintCard.staff_id == entry_id)
-
-                else:
-
-                    query = query.filter(
-                        or_(
-                            PrintCard.student_id == entry_id,
-                            PrintCard.staff_id == entry_id,
-                        )
-                    )
-
-            elif entity_type == "student":
-
-                query = query.filter(PrintCard.student_id != None)
-
-            elif entity_type == "staff":
-
-                query = query.filter(PrintCard.staff_id != None)
-
-            rows = query.order_by(PrintCard.id.desc()).all()
-
-            return [dict(r._mapping) for r in rows]
+        except HTTPException:
+            raise
 
         except SQLAlchemyError as e:
             raise HTTPException(
@@ -263,41 +265,44 @@ class OrganizationService:
                 detail=str(e),
             )
 
-    # ─────────────────────────────────────────────────────────────
-    # Detail
-    # ─────────────────────────────────────────────────────────────
-
     @staticmethod
-    def getAllPrintCardById(print_card_id, db):
+    def getPrintCardByEntityId(entity_id, db):
 
         try:
+            sql = text("""
+                SELECT
+                    pc.id,
+                    s.id as student_id,
+                    s.display_name as student_name,
+                    pc.print_date as print_date,
+                    pc.is_print_card as is_print_card,
+                    teac.id as staff_id,
+                    teac.display_name as staff_name,
+                    sel.id as seller_id,
+                    sel.display_name as seller_name,
+                    pc.description
+                FROM
+                    print_cards pc
+                LEFT JOIN students s ON pc.student_id = s.id
+                LEFT JOIN staff teac ON pc.staff_id = teac.id
+                LEFT JOIN staff sel ON pc.seller_id = sel.id
+                WHERE student_id = :entity_id OR staff_id = :entity_id
+                GROUP BY 
+                    pc.id,
+                    s.id,
+                    s.display_name,
+                    pc.print_date,
+                    pc.is_print_card,
+                    teac.id,
+                    teac.display_name,
+                    sel.id,
+                    sel.display_name,
+                    pc.description
+            """)
 
-            print_card = (
-                OrganizationService.print_card(db)
-                .filter(PrintCard.id == print_card_id)
-                .first()
-            )
+            results = db.execute(sql, {"entity_id": entity_id}).fetchall()
 
-            if not print_card:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Print card not found",
-                )
-
-            mappings = (
-                db.query(print_cards_mapping)
-                .filter(print_cards_mapping.c.print_card_id == print_card_id)
-                .all()
-            )
-
-            result = dict(print_card._mapping)
-
-            result["mappings"] = [dict(m._mapping) for m in mappings]
-
-            return result
-
-        except HTTPException:
-            raise
+            return [PrintCardService.PrintCardDataMapper(row) for row in results]
 
         except SQLAlchemyError as e:
             raise HTTPException(
@@ -332,7 +337,16 @@ class OrganizationService:
                     detail="seller_id is required",
                 )
 
-            if not print_card_data.student_id and not print_card_data.staff_id:
+            student_id = print_card_data.student_id
+            staff_id = print_card_data.staff_id
+
+            if print_card_data.entry_id and print_card_data.entity_type:
+                if print_card_data.entity_type == "student":
+                    student_id = print_card_data.entry_id
+                elif print_card_data.entity_type == "staff":
+                    staff_id = print_card_data.entry_id
+
+            if not student_id and not staff_id:
                 raise HTTPException(
                     status_code=400,
                     detail="student_id or staff_id is required",
@@ -340,8 +354,8 @@ class OrganizationService:
 
             # Create card
             new_card = PrintCard(
-                student_id=print_card_data.student_id,
-                staff_id=print_card_data.staff_id,
+                student_id=student_id,
+                staff_id=staff_id,
                 print_date=print_card_data.print_date,
                 is_print_card=print_card_data.is_print_card,
                 seller_id=print_card_data.seller_id,
@@ -358,8 +372,8 @@ class OrganizationService:
                 db.execute(
                     print_cards_mapping.insert().values(
                         print_card_id=new_card.id,
-                        cable_color_id=m.get("cable_color_id"),
-                        quantity=m.get("quantity", 1),
+                        cable_color_id=m.cable_color_id,
+                        quantity=m.quantity,
                     )
                 )
 
@@ -393,7 +407,7 @@ class OrganizationService:
                 telegram_message=telegram_msg,
             )
 
-            return OrganizationService.getAllPrintCardById(
+            return PrintCardService.getPrintCardById(
                 new_card.id,
                 db,
             )
@@ -446,15 +460,24 @@ class OrganizationService:
                     detail="seller_id is required",
                 )
 
-            if not print_card_data.student_id and not print_card_data.staff_id:
+            student_id = print_card_data.student_id
+            staff_id = print_card_data.staff_id
+
+            if print_card_data.entry_id and print_card_data.entity_type:
+                if print_card_data.entity_type == "student":
+                    student_id = print_card_data.entry_id
+                elif print_card_data.entity_type == "staff":
+                    staff_id = print_card_data.entry_id
+
+            if not student_id and not staff_id:
                 raise HTTPException(
                     status_code=400,
                     detail="student_id or staff_id is required",
                 )
 
             # Update card
-            card.student_id = print_card_data.student_id  # type: ignore
-            card.staff_id = print_card_data.staff_id  # type: ignore
+            card.student_id = student_id  # type: ignore
+            card.staff_id = staff_id  # type: ignore
             card.print_date = print_card_data.print_date  # type: ignore
             card.is_print_card = print_card_data.is_print_card  # type: ignore
             card.seller_id = print_card_data.seller_id  # type: ignore
@@ -475,9 +498,9 @@ class OrganizationService:
 
                 db.execute(
                     print_cards_mapping.insert().values(
-                        print_card_id=card.id,
-                        cable_color_id=m.get("cable_color_id"),
-                        quantity=m.get("quantity", 1),
+                        print_card_id=print_card_id,
+                        cable_color_id=m.cable_color_id,
+                        quantity=m.quantity,
                     )
                 )
 
@@ -511,7 +534,7 @@ class OrganizationService:
                 telegram_message=telegram_msg,
             )
 
-            return OrganizationService.getAllPrintCardById(
+            return PrintCardService.getPrintCardById(
                 card.id,
                 db,
             )

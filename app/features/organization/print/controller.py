@@ -1,33 +1,31 @@
-from app.features.organization.print.service import OrganizationService
+from app.features.organization.print.service import PrintCardService
 
 
-class OrganizationController:
-
-    @staticmethod
-    def getAllPrintCardTemplate(db):
-        return OrganizationService.getAllPrintCardTemplate(db)
+class PrintCardController:
 
     @staticmethod
     def getPrintCardStudentTemplate(entity_id, db):
-        return OrganizationService.getPrintCardStudentTemplate(entity_id, db)
+        return PrintCardService.getPrintCardStudentTemplate(entity_id, db)
+
+    @staticmethod
+    def getPrintCardData(db):
+        return PrintCardService.getPrintCardData(db)
 
     @staticmethod
     def getPrintCardStaffTemplate(entity_id, db):
-        return OrganizationService.getPrintCardStaffTemplate(entity_id, db)
+        return PrintCardService.getPrintCardStaffTemplate(entity_id, db)
 
     @staticmethod
-    def getAllPrintCard(db, entry_id=None, entity_type=None):
-        return OrganizationService.getAllPrintCard(
-            db, entry_id=entry_id, entity_type=entity_type # type: ignore
-        )
+    def getPrintCardById(print_card_id, db):
+        return PrintCardService.getPrintCardById(print_card_id, db)
 
     @staticmethod
-    def getAllPrintCardById(print_card_id, db):
-        return OrganizationService.getAllPrintCardById(print_card_id, db)
+    def getPrintCardByEntityId(entity_id, db):
+        return PrintCardService.getPrintCardByEntityId(entity_id, db)
 
     @staticmethod
     def PrintCardNew(print_card_data, db, current_user, background_tasks):
-        return OrganizationService.PrintCardNew(
+        return PrintCardService.PrintCardNew(
             print_card_data, db, current_user, background_tasks
         )
 
@@ -35,6 +33,6 @@ class OrganizationController:
     def UpdatePrintCard(
         print_card_id, print_card_data, db, current_user, background_tasks
     ):
-        return OrganizationService.UpdatePrintCard(
+        return PrintCardService.UpdatePrintCard(
             print_card_id, print_card_data, db, current_user, background_tasks
         )
