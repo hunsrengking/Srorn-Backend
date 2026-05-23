@@ -112,7 +112,10 @@ def calc_col_widths(
                 max_data_width = width
         data_widths.append(max_data_width + padding)
 
-    ideal_widths = [max(min_width, data_width) for min_width, data_width in zip(min_widths, data_widths)]
+    ideal_widths = [
+        max(min_width, data_width)
+        for min_width, data_width in zip(min_widths, data_widths)
+    ]
     total_ideal_width = sum(ideal_widths)
 
     if total_ideal_width <= max_width:
@@ -228,7 +231,7 @@ def _export_excel(df: pd.DataFrame, from_date: str | None, to_date: str | None):
         for row_idx, row in enumerate(df.itertuples(index=False), start=4):
             for col_idx, value in enumerate(row):
                 if isinstance(value, (pd.Timestamp, datetime.date, datetime.datetime)):
-                    worksheet.write_datetime(row_idx, col_idx, value, date_cell)
+                    worksheet.write_datetime(row_idx, col_idx, value, date_cell) # type: ignore
                 elif isinstance(value, (int, float)):
                     worksheet.write(row_idx, col_idx, value, cell_right)
                 else:

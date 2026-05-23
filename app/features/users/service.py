@@ -6,9 +6,9 @@ from sqlalchemy import case
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
-from app.features.departments.schema import Department
-from app.features.roles.schema import Role
-from app.features.staff.schema import Staff
+from app.features.organization.departments.schema import Department
+from app.features.setting.roles.schema import Role
+from app.features.organization.staff.schema import Staff
 from app.features.tickets.schema import Ticket
 from app.features.users.schema import User
 

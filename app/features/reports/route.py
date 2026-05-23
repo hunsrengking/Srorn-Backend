@@ -6,15 +6,15 @@ from sqlalchemy.orm import Session
 from app.config.db import get_db
 from app.features.reports.controller import ReportController
 
-router = APIRouter(prefix="/api")
+router = APIRouter(prefix="/api/reports", tags=["Reports"])
 
 
-@router.get("/reports-testing")
+@router.get("/testing")
 def get_reports_testing(db: Session = Depends(get_db)):
     return ReportController.get_reports_testing(db)
 
 
-@router.get("/reports")
+@router.get("/ticket")
 def get_reports(
     from_date: str | None = Query(None),
     to_date: str | None = Query(None),
@@ -24,7 +24,7 @@ def get_reports(
     return ReportController.get_reports(db, from_date, to_date, status)
 
 
-@router.get("/reports/export")
+@router.get("/ticket/export")
 def export_reports(
     from_date: str | None = Query(None),
     to_date: str | None = Query(None),

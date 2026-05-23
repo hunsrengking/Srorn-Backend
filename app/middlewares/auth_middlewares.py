@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.config.db import get_db
 from app.features.auth.service import AuthService
 from app.features.users.service import UserService
-from app.features.roles.service import RoleService
+from app.features.setting.roles.service import RoleService
 import logging
 
 auth_scheme = HTTPBearer(auto_error=False)

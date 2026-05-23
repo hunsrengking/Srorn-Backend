@@ -8,7 +8,7 @@ class AssetAssignment(Base):
 
     id = Column(Integer, primary_key=True)
     asset_id = Column(Integer, ForeignKey("assets.id"))
-    staff_id = Column(Integer, ForeignKey("staffs.id"))
+    staff_id = Column(Integer, ForeignKey("staff.id"))
     assigned_date = Column(DateTime, default=func.now())
     is_returned = Column(Boolean, default=False)
     returned_date = Column(DateTime, nullable=True)

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.features.notifications.models import NotificationRequest
 from app.features.notifications.schema import Notification
-from app.features.telegram.service import TelegramService
+from app.features.setting.telegram.service import TelegramService
 
 
 class NotificationService:

@@ -8,14 +8,14 @@ from sqlalchemy.orm import Session, aliased
 
 from app.config.iconfig import FRONTEND_URL
 from app.constants.status_constants import *
-from app.features.departments.service import DepartmentService
+from app.features.organization.departments.service import DepartmentService
 from app.features.notifications.models import NotificationRequest
 from app.features.notifications.service import NotificationService
-from app.features.statuses.category_schema import Category
-from app.features.statuses.priority_schema import Priority
-from app.features.statuses.schema import Status
-from app.features.statuses.service import StatusService
-from app.features.telegram.service import TelegramService
+from app.features.setting.statuses.category_schema import Category
+from app.features.setting.statuses.priority_schema import Priority
+from app.features.setting.statuses.schema import Status
+from app.features.setting.statuses.service import StatusService
+from app.features.setting.telegram.service import TelegramService
 from app.features.tickets.item_schema import Item
 from app.features.tickets.models import TicketRequest
 from app.features.tickets.schema import Ticket

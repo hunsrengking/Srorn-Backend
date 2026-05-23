@@ -1,6 +1,6 @@
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi import HTTPException, BackgroundTasks
-from app.features.positions.schema import Position
+from app.features.organization.positions.schema import Position
 from app.features.students.schema import Student
 from app.features.notifications.service import NotificationService
 
