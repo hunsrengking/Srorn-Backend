@@ -2,7 +2,7 @@ from fastapi import HTTPException, BackgroundTasks
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy import text
-
+import datetime
 from app.config.iconfig import FRONTEND_URL
 from app.features.setting.code.service import CodeService
 from app.features.notifications.service import NotificationService
@@ -543,9 +543,108 @@ class PrintCardService:
             raise
 
         except Exception as e:
-
             db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail=str(e),
+            )
 
+    @staticmethod
+    def getPrintCardStats(db: Session):
+        try:
+
+            # Get current year or the year of the latest print card
+            current_year = datetime.date.today().year
+            latest_card = db.execute(
+                text("SELECT MAX(print_date) FROM print_cards")
+            ).scalar()
+            if latest_card:
+                if isinstance(latest_card, str):
+                    try:
+                        latest_card = datetime.datetime.strptime(
+                            latest_card[:19], "%Y-%m-%d %H:%M:%S"
+                        )
+                    except:
+                        try:
+                            latest_card = datetime.datetime.strptime(
+                                latest_card[:10], "%Y-%m-%d"
+                            )
+                        except:
+                            pass
+                if hasattr(latest_card, "year"):
+                    current_year = latest_card.year # type: ignore
+
+            # 1. Fetch active colors from code_values for 'Cable Color'
+            sql_colors = text("""
+                SELECT cv.code_value 
+                FROM code_values cv 
+                JOIN codes c ON cv.code_id = c.id 
+                WHERE c.codes_name = 'Cable Color' AND cv.is_active = 1
+            """)
+            res_colors = db.execute(sql_colors).fetchall()
+            active_colors = [row.code_value for row in res_colors]
+
+            # Initialize months map for all 12 months of the current year
+            months_map = {}
+            for m_idx in range(1, 13):
+                ym = f"{current_year}-{m_idx:02d}"
+                months_map[ym] = {
+                    "month": ym,
+                    "total_card": 0,
+                    "Cable": [{"color": color, "total": 0} for color in active_colors],
+                }
+
+            # 2. Query Card counts per month
+            sql_cards = text("""
+                SELECT DATE_FORMAT(print_date, '%Y-%m') as ym, COUNT(id) as total_card 
+                FROM print_cards 
+                GROUP BY ym
+            """)
+            res_cards = db.execute(sql_cards).fetchall()
+            for row in res_cards:
+                ym = row.ym
+                if ym in months_map:
+                    months_map[ym]["total_card"] = int(row.total_card or 0)
+
+            # 3. Query Cable counts per month joining mappings and code_values
+            sql_cables = text("""
+                SELECT 
+                    DATE_FORMAT(pc.print_date, '%Y-%m') as ym, 
+                    cv.code_value as color, 
+                    SUM(pcm.quantity) as total
+                FROM print_cards pc
+                JOIN print_cards_mapping pcm ON pc.id = pcm.print_card_id
+                JOIN code_values cv ON pcm.cable_color_id = cv.id
+                JOIN codes c ON cv.code_id = c.id
+                WHERE c.codes_name = 'Cable Color'
+                GROUP BY ym, color
+            """)
+            res_cables = db.execute(sql_cables).fetchall()
+            for row in res_cables:
+                ym = row.ym
+                if ym in months_map:
+                    found = False
+                    for c in months_map[ym]["Cable"]:
+                        if c["color"].lower() == row.color.lower():
+                            c["total"] = int(row.total or 0)
+                            found = True
+                            break
+                    if not found:
+                        months_map[ym]["Cable"].append(
+                            {"color": row.color, "total": int(row.total or 0)}
+                        )
+
+            # Sort stats by month key ascending
+            sorted_stats = [months_map[k] for k in sorted(months_map.keys())]
+
+            return sorted_stats
+
+        except SQLAlchemyError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=str(e),
+            )
+        except Exception as e:
             raise HTTPException(
                 status_code=500,
                 detail=str(e),

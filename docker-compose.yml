@@ -1,0 +1,65 @@
+name: Srorn_System
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: srorn_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-tufu505535}
+      MYSQL_DATABASE: ${DB_NAME:-db_srorn}
+    ports:
+      - "${DB_PORT:-3309}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - srorn_network
+
+  backend:
+    build: .
+    container_name: srorn_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+    env_file:
+      - .env
+    volumes:
+      - ./public/uploads:/app/public/uploads
+    depends_on:
+      - db
+    networks:
+      - srorn_network
+  frontend:
+    build:
+      context: ../Srorn-Frontend
+      dockerfile: Dockerfile
+    container_name: srorn_frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - srorn_network
+  
+  report:
+    image: jsreport/jsreport:latest
+    container_name: srorn_report
+    restart: always
+    ports:
+      - "5488:5488"
+    volumes:
+      - jsreport_data:/jsreport
+    networks:
+      - srorn_network
+
+volumes:
+  mysql_data:
+  jsreport_data:
+
+networks:
+  srorn_network:
+    driver: bridge

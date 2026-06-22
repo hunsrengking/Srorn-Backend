@@ -12,6 +12,10 @@ class PrintCardController:
         return PrintCardService.getPrintCardData(db)
 
     @staticmethod
+    def getPrintCardStats(db):
+        return PrintCardService.getPrintCardStats(db)
+
+    @staticmethod
     def getPrintCardStaffTemplate(entity_id, db):
         return PrintCardService.getPrintCardStaffTemplate(entity_id, db)
 

@@ -36,6 +36,11 @@ def getPrintCardData(db: Session = Depends(get_db)):
     return PrintCardController.getPrintCardData(db)
 
 
+@router.get("/printcards/stats")
+def getPrintCardStats(db: Session = Depends(get_db)):
+    return PrintCardController.getPrintCardStats(db)
+
+
 @router.get("/printcards/{print_card_id}")
 def getPrintCardById(
     print_card_id: int,
